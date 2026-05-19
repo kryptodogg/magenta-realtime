@@ -26,34 +26,34 @@ from absl import logging
 from . import asset
 
 _ASSET = flags.DEFINE_string(
-    'asset',
+    "asset",
     None,
-    'Path to the asset to download.',
+    "Path to the asset to download.",
     required=True,
 )
 _SOURCE = flags.DEFINE_string(
-    'source',
-    'gcp',
-    'Source to fetch the asset from.',
+    "source",
+    "gcp",
+    "Source to fetch the asset from.",
 )
 _IS_DIR = flags.DEFINE_bool(
-    'is_dir',
+    "is_dir",
     False,
-    'Whether the asset is a directory.',
+    "Whether the asset is a directory.",
 )
 
 
 def main(unused_argv):
-  is_archive = _ASSET.value.endswith('.tar')
-  result_path = asset.fetch(
-      _ASSET.value,
-      is_dir=is_archive or _IS_DIR.value,
-      extract_archive=is_archive,
-      override_cache=True,
-      source=_SOURCE.value,
-  )
-  logging.info('Fetched %s to %s', _ASSET.value, result_path)
+    is_archive = _ASSET.value.endswith(".tar")
+    result_path = asset.fetch(
+        _ASSET.value,
+        is_dir=is_archive or _IS_DIR.value,
+        extract_archive=is_archive,
+        override_cache=True,
+        source=_SOURCE.value,
+    )
+    logging.info("Fetched %s to %s", _ASSET.value, result_path)
 
 
-if __name__ == '__main__':
-  app.run(main)
+if __name__ == "__main__":
+    app.run(main)

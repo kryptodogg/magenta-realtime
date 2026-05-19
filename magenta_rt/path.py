@@ -18,4 +18,4 @@
 import pathlib
 
 MODULE_DIR = pathlib.Path(__file__).parent
-DEFAULT_CACHE_DIR = pathlib.Path(pathlib.Path.home(), '.cache', 'magenta_rt')
+DEFAULT_CACHE_DIR = pathlib.Path(pathlib.Path.home(), ".cache", "magenta_rt")

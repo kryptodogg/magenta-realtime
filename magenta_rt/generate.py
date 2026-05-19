@@ -33,93 +33,90 @@ from . import audio
 from . import system
 
 _PROMPTS = flags.DEFINE_list(
-    'prompt',
+    "prompt",
     None,
-    'Prompt to generate.',
+    "Prompt to generate.",
     required=True,
 )
 _WEIGHTS = flags.DEFINE_list(
-    'weight',
+    "weight",
     None,
-    'Weight for each prompt.',
+    "Weight for each prompt.",
 )
 _DURATION = flags.DEFINE_float(
-    'duration',
+    "duration",
     30.0,
-    'Duration of the output audio.',
+    "Duration of the output audio.",
 )
 _OUTPUT = flags.DEFINE_string(
-    'output',
-    'output.wav',
-    'Path to the output audio file.',
+    "output",
+    "output.wav",
+    "Path to the output audio file.",
 )
 _TAG = flags.DEFINE_string(
-    'tag',
-    'large',
-    'Tag of the model to use.',
+    "tag",
+    "large",
+    "Tag of the model to use.",
 )
 _DEVICE = flags.DEFINE_string(
-    'device',
-    'gpu',
-    'Device to use.',
+    "device",
+    "gpu",
+    "Device to use.",
 )
 
 
 def main(unused_argv):
-  # Parse prompts
-  prompts = []
-  for prompt_or_path in _PROMPTS.value:
-    path = pathlib.Path(prompt_or_path)
-    if path.exists():
-      # Assume prompt is a path to an audio file
-      prompt = audio.Waveform.from_file(str(path))
+    # Parse prompts
+    prompts = []
+    for prompt_or_path in _PROMPTS.value:
+        path = pathlib.Path(prompt_or_path)
+        if path.exists():
+            # Assume prompt is a path to an audio file
+            prompt = audio.Waveform.from_file(str(path))
+        else:
+            # If not, assume prompt is a text prompt
+            prompt = prompt_or_path
+        prompts.append(prompt)
+
+    # Parse weights
+    weights = _WEIGHTS.value
+    if weights is None:
+        weights = [1.0] * len(prompts)
     else:
-      # If not, assume prompt is a text prompt
-      prompt = prompt_or_path
-    prompts.append(prompt)
+        try:
+            weights = [float(w) for w in weights]
+        except ValueError as e:
+            raise ValueError(
+                f"Weights must be a comma-separated list of floats, but got {weights}."
+            ) from e
 
-  # Parse weights
-  weights = _WEIGHTS.value
-  if weights is None:
-    weights = [1.0] * len(prompts)
-  else:
-    try:
-      weights = [float(w) for w in weights]
-    except ValueError as e:
-      raise ValueError(
-          'Weights must be a comma-separated list of floats, but got'
-          f' {weights}.'
-      ) from e
+    # Check that number of prompts and weights match
+    if len(prompts) != len(weights):
+        raise ValueError(
+            "Number of prompts must match number of weights, but got"
+            f" {len(prompts)} prompts and {len(weights)} weights."
+        )
 
-  # Check that number of prompts and weights match
-  if len(prompts) != len(weights):
-    raise ValueError(
-        'Number of prompts must match number of weights, but got'
-        f' {len(prompts)} prompts and {len(weights)} weights.'
-    )
+    # Init system
+    magenta_rt = system.MagentaRT(tag=_TAG.value, device=_DEVICE.value, lazy=False)
 
-  # Init system
-  magenta_rt = system.MagentaRT(
-      tag=_TAG.value, device=_DEVICE.value, lazy=False
-  )
+    # Blend styles
+    styles = np.array([magenta_rt.embed_style(p) for p in prompts])
+    weights = np.array(weights, dtype=np.float32)
+    weights /= weights.sum()
+    style = (weights[:, np.newaxis] * styles).mean(axis=0)
 
-  # Blend styles
-  styles = np.array([magenta_rt.embed_style(p) for p in prompts])
-  weights = np.array(weights, dtype=np.float32)
-  weights /= weights.sum()
-  style = (weights[:, np.newaxis] * styles).mean(axis=0)
-
-  # Generate and write output
-  chunks = []
-  state = None
-  num_chunks = int(np.ceil(_DURATION.value / magenta_rt.config.chunk_length))
-  num_samples = round(_DURATION.value * magenta_rt.sample_rate)
-  for _ in tqdm.tqdm(range(num_chunks)):
-    chunk, state = magenta_rt.generate_chunk(state=state, style=style)
-    chunks.append(chunk)
-  generated = audio.concatenate(chunks)[:num_samples]
-  generated.write(_OUTPUT.value)
+    # Generate and write output
+    chunks = []
+    state = None
+    num_chunks = int(np.ceil(_DURATION.value / magenta_rt.config.chunk_length))
+    num_samples = round(_DURATION.value * magenta_rt.sample_rate)
+    for _ in tqdm.tqdm(range(num_chunks)):
+        chunk, state = magenta_rt.generate_chunk(state=state, style=style)
+        chunks.append(chunk)
+    generated = audio.concatenate(chunks)[:num_samples]
+    generated.write(_OUTPUT.value)
 
 
-if __name__ == '__main__':
-  app.run(main)
+if __name__ == "__main__":
+    app.run(main)

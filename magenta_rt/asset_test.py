@@ -22,27 +22,26 @@ from . import asset
 
 
 class TestAsset(absltest.TestCase):
+    def test_cache_dir(self):
+        cache_dir = asset.get_cache_dir()
+        self.assertTrue(cache_dir.exists())
+        self.assertTrue(cache_dir.is_dir())
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            asset.set_cache_dir(tmp_dir)
+            self.assertEqual(asset.get_cache_dir(), pathlib.Path(tmp_dir))
 
-  def test_cache_dir(self):
-    cache_dir = asset.get_cache_dir()
-    self.assertTrue(cache_dir.exists())
-    self.assertTrue(cache_dir.is_dir())
-    with tempfile.TemporaryDirectory() as tmp_dir:
-      asset.set_cache_dir(tmp_dir)
-      self.assertEqual(asset.get_cache_dir(), pathlib.Path(tmp_dir))
+    def test_get_path_gcp(self):
+        self.assertEqual(
+            asset.get_path_gcp("foo/bar/baz"),
+            f"gs://{asset.GCP_BUCKET.name}/foo/bar/baz",
+        )
 
-  def test_get_path_gcp(self):
-    self.assertEqual(
-        asset.get_path_gcp("foo/bar/baz"),
-        f"gs://{asset.GCP_BUCKET.name}/foo/bar/baz",
-    )
-
-  def test_get_path_hf(self):
-    self.assertEqual(
-        asset.get_path_hf("foo/bar/baz"),
-        f"hf://{asset.HF_REPO_NAME}/foo/bar/baz",
-    )
+    def test_get_path_hf(self):
+        self.assertEqual(
+            asset.get_path_hf("foo/bar/baz"),
+            f"hf://{asset.HF_REPO_NAME}/foo/bar/baz",
+        )
 
 
 if __name__ == "__main__":
-  absltest.main()
+    absltest.main()

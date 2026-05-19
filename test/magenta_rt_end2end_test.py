@@ -20,21 +20,20 @@ from magenta_rt import system
 
 
 class MagentaRTEnd2EndTest(absltest.TestCase):
+    def test_magenta_rt(self):
+        mrt = system.MagentaRT(tag="base", lazy=False)
+        waveform, state = mrt.generate_chunk(max_decode_frames=10)
+        self.assertEqual(waveform.samples.shape, (21120, 2))
+        self.assertEqual(state.context_tokens.shape, (250, 16))
+        waveform, state = mrt.generate_chunk()
+        self.assertIsInstance(waveform, audio.Waveform)
+        self.assertIsInstance(state, system.MagentaRTState)
+        self.assertEqual(waveform.sample_rate, 48000)
+        self.assertEqual(waveform.samples.shape, (97920, 2))
+        self.assertEqual(state.context_tokens.shape, (250, 16))
 
-  def test_magenta_rt(self):
-    mrt = system.MagentaRT(tag="base", lazy=False)
-    waveform, state = mrt.generate_chunk(max_decode_frames=10)
-    self.assertEqual(waveform.samples.shape, (21120, 2))
-    self.assertEqual(state.context_tokens.shape, (250, 16))
-    waveform, state = mrt.generate_chunk()
-    self.assertIsInstance(waveform, audio.Waveform)
-    self.assertIsInstance(state, system.MagentaRTState)
-    self.assertEqual(waveform.sample_rate, 48000)
-    self.assertEqual(waveform.samples.shape, (97920, 2))
-    self.assertEqual(state.context_tokens.shape, (250, 16))
-
-  # TODO(chrisdonahue): add integration test against real outputs
+    # TODO(chrisdonahue): add integration test against real outputs
 
 
 if __name__ == "__main__":
-  absltest.main()
+    absltest.main()

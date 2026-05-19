@@ -21,35 +21,34 @@ from . import spectrostream
 
 
 class SpectroStreamTest(absltest.TestCase):
+    def test_codec(self):
+        ss_model = spectrostream.MockSpectroStream()
 
-  def test_codec(self):
-    ss_model = spectrostream.MockSpectroStream()
+        a = audio.Waveform(np.random.rand(32000, 2).astype(np.float32), 16000)
+        b = audio.Waveform(np.random.rand(32000, 2).astype(np.float32), 16000)
 
-    a = audio.Waveform(np.random.rand(32000, 2).astype(np.float32), 16000)
-    b = audio.Waveform(np.random.rand(32000, 2).astype(np.float32), 16000)
+        tokens = ss_model.encode(a)
+        self.assertIsInstance(tokens, np.ndarray)
+        self.assertEqual(tokens.shape, (50, 64))
 
-    tokens = ss_model.encode(a)
-    self.assertIsInstance(tokens, np.ndarray)
-    self.assertEqual(tokens.shape, (50, 64))
+        rt = ss_model.decode(tokens)
+        self.assertIsInstance(rt, audio.Waveform)
+        self.assertEqual(rt.sample_rate, 48000)
+        self.assertEqual(rt.num_samples, 96000)
+        self.assertEqual(rt.num_channels, 2)
 
-    rt = ss_model.decode(tokens)
-    self.assertIsInstance(rt, audio.Waveform)
-    self.assertEqual(rt.sample_rate, 48000)
-    self.assertEqual(rt.num_samples, 96000)
-    self.assertEqual(rt.num_channels, 2)
+        tokens = ss_model.encode([a, b])
+        self.assertIsInstance(tokens, np.ndarray)
+        self.assertEqual(tokens.shape, (2, 50, 64))
 
-    tokens = ss_model.encode([a, b])
-    self.assertIsInstance(tokens, np.ndarray)
-    self.assertEqual(tokens.shape, (2, 50, 64))
-
-    rt = ss_model.decode(tokens)
-    self.assertIsInstance(rt, list)
-    self.assertLen(rt, 2)
-    for w in rt:
-      self.assertEqual(w.sample_rate, 48000)
-      self.assertEqual(w.num_samples, 96000)
-      self.assertEqual(w.num_channels, 2)
+        rt = ss_model.decode(tokens)
+        self.assertIsInstance(rt, list)
+        self.assertLen(rt, 2)
+        for w in rt:
+            self.assertEqual(w.sample_rate, 48000)
+            self.assertEqual(w.num_samples, 96000)
+            self.assertEqual(w.num_channels, 2)
 
 
 if __name__ == "__main__":
-  absltest.main()
+    absltest.main()

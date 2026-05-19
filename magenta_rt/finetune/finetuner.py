@@ -25,58 +25,58 @@ from ..depthformer import model as model_lib
 
 
 class MagentaRTFinetuner:
-  """Wrapper around T5X InteractiveModel for Magenta RT finetuning."""
+    """Wrapper around T5X InteractiveModel for Magenta RT finetuning."""
 
-  def __init__(
-      self,
-      checkpoint_dir: str | None = None,
-      output_dir: str | None = None,
-      tag: str = 'base',
-      batch_size: int = 8,
-  ):
-    self.batch_size = batch_size
-    self.tag = tag
-    if checkpoint_dir is None:
-      if self.tag == 'base':
-        path = 'checkpoints/llm_base_x4286_c1860k.tar'
-      else:
-        path = 'checkpoints/llm_large_x3047_c1860k.tar'
-      self.checkpoint_dir = asset.fetch(path, is_dir=True, extract_archive=True)
-    else:
-      self.checkpoint_dir = checkpoint_dir
+    def __init__(
+        self,
+        checkpoint_dir: str | None = None,
+        output_dir: str | None = None,
+        tag: str = "base",
+        batch_size: int = 8,
+    ):
+        self.batch_size = batch_size
+        self.tag = tag
+        if checkpoint_dir is None:
+            if self.tag == "base":
+                path = "checkpoints/llm_base_x4286_c1860k.tar"
+            else:
+                path = "checkpoints/llm_large_x3047_c1860k.tar"
+            self.checkpoint_dir = asset.fetch(path, is_dir=True, extract_archive=True)
+        else:
+            self.checkpoint_dir = checkpoint_dir
 
-    if output_dir is None:
-      output_dir = str(pathlib.Path(pathlib.Path.cwd() / 'finetune'))
-    if not os.path.exists(output_dir):
-      os.makedirs(output_dir)
+        if output_dir is None:
+            output_dir = str(pathlib.Path(pathlib.Path.cwd() / "finetune"))
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
 
-    _, _, self.interactive_model = model_lib.load_pretrained_model(
-        checkpoint_dir=self.checkpoint_dir,
-        size=self.tag,
-        batch_size=self.batch_size,
-        num_partitions=1,
-        model_parallel_submesh=None,
-        gin_overrides='',
-        output_dir=output_dir,
-    )
+        _, _, self.interactive_model = model_lib.load_pretrained_model(
+            checkpoint_dir=self.checkpoint_dir,
+            size=self.tag,
+            batch_size=self.batch_size,
+            num_partitions=1,
+            model_parallel_submesh=None,
+            gin_overrides="",
+            output_dir=output_dir,
+        )
 
-  def train(self, train_iter, num_steps, save_ckpt_period=1000):
-    self.accuracy = []
-    self.loss = []
-    for step in tqdm.tqdm(range(num_steps)):
-      self.interactive_model.train_step_from_batch_iterator(train_iter)
-      self.accuracy.append(self.interactive_model.train_summary['accuracy'])
-      self.loss.append(self.interactive_model.train_summary['loss'])
-      if step % save_ckpt_period == 0:
-        self.save_checkpoint()
+    def train(self, train_iter, num_steps, save_ckpt_period=1000):
+        self.accuracy = []
+        self.loss = []
+        for step in tqdm.tqdm(range(num_steps)):
+            self.interactive_model.train_step_from_batch_iterator(train_iter)
+            self.accuracy.append(self.interactive_model.train_summary["accuracy"])
+            self.loss.append(self.interactive_model.train_summary["loss"])
+            if step % save_ckpt_period == 0:
+                self.save_checkpoint()
 
-  def save_checkpoint(self):
-    self.interactive_model.save_checkpoint()
+    def save_checkpoint(self):
+        self.interactive_model.save_checkpoint()
 
-  @property
-  def train_state(self):
-    return self.interactive_model.train_state
+    @property
+    def train_state(self):
+        return self.interactive_model.train_state
 
-  @property
-  def train_summary(self):
-    return self.interactive_model.train_summary
+    @property
+    def train_summary(self):
+        return self.interactive_model.train_summary

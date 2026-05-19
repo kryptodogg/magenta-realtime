@@ -26,13 +26,13 @@ TextPrompt = str
 # Audio prompt represented as a numpy array.
 @dataclasses.dataclass()
 class AudioPrompt:
-  value: np.ndarray
+    value: np.ndarray
 
 
 # Embedding prompt represented as a numpy array.
 @dataclasses.dataclass()
 class EmbeddingPrompt:
-  value: np.ndarray
+    value: np.ndarray
 
 
 Prompt = TextPrompt | AudioPrompt | EmbeddingPrompt

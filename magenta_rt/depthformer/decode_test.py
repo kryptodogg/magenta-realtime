@@ -22,54 +22,53 @@ mock = absltest.mock
 
 
 class DecodeTest(absltest.TestCase):
+    def test_constrained_decoding_semantic(self):
+        in_logits = np.ones(5122)
+        expected_logits = np.full_like(in_logits, -np.inf)
+        expected_logits[4098:5122] = 1.0
 
-  def test_constrained_decoding_semantic(self):
-    in_logits = np.ones(5122)
-    expected_logits = np.full_like(in_logits, -np.inf)
-    expected_logits[4098:5122] = 1.0
+        for i in range(250):
+            state = mock.Mock(cur_index=[i])
+            new_logits = decode.constrained_logit_callback_fn(
+                in_logits, state, split_point=250
+            )
+            np.testing.assert_equal(new_logits, expected_logits)
 
-    for i in range(250):
-      state = mock.Mock(cur_index=[i])
-      new_logits = decode.constrained_logit_callback_fn(
-          in_logits, state, split_point=250
-      )
-      np.testing.assert_equal(new_logits, expected_logits)
+    def test_constrained_decoding_acoustic(self):
+        in_logits = np.ones(5122)
 
-  def test_constrained_decoding_acoustic(self):
-    in_logits = np.ones(5122)
+        for i in range(250, 2250):
+            expected_logits = np.full_like(in_logits, -np.inf)
+            expected_logits[
+                2 + (i - 250) % 4 * 1024 : 2 + ((i - 250) % 4 + 1) * 1024
+            ] = 1.0
+            state = mock.Mock(cur_index=[i])
+            new_logits = decode.constrained_logit_callback_fn(
+                in_logits, state, split_point=250
+            )
+            np.testing.assert_equal(new_logits, expected_logits)
 
-    for i in range(250, 2250):
-      expected_logits = np.full_like(in_logits, -np.inf)
-      expected_logits[
-          2 + (i - 250) % 4 * 1024 : 2 + ((i - 250) % 4 + 1) * 1024
-      ] = 1.0
-      state = mock.Mock(cur_index=[i])
-      new_logits = decode.constrained_logit_callback_fn(
-          in_logits, state, split_point=250
-      )
-      np.testing.assert_equal(new_logits, expected_logits)
+    def test_constrained_decoding_style(self):
+        in_logits = np.ones(17410)
 
-  def test_constrained_decoding_style(self):
-    in_logits = np.ones(17410)
+        for i in range(12):
+            expected_logits = np.ones(17410) * -np.inf
+            expected_logits[5122 + i * 1024 : 5122 + (i + 1) * 1024] = 1.0
+            state = mock.Mock(cur_index=[i])
+            new_logits = decode.constrained_logit_callback_fn(
+                in_logits, state, split_point=250, style_depth=12
+            )
+            np.testing.assert_equal(new_logits, expected_logits)
 
-    for i in range(12):
-      expected_logits = np.ones(17410) * -np.inf
-      expected_logits[5122 + i * 1024 : 5122 + (i + 1) * 1024] = 1.0
-      state = mock.Mock(cur_index=[i])
-      new_logits = decode.constrained_logit_callback_fn(
-          in_logits, state, split_point=250, style_depth=12
-      )
-      np.testing.assert_equal(new_logits, expected_logits)
-
-    # Test semantic with style offset.
-    expected_logits = np.ones(17410) * -np.inf
-    expected_logits[4098:5122] = 1.0
-    state = mock.Mock(cur_index=[13])
-    new_logits = decode.constrained_logit_callback_fn(
-        in_logits, state, split_point=250, style_depth=12
-    )
-    np.testing.assert_equal(new_logits, expected_logits)
+        # Test semantic with style offset.
+        expected_logits = np.ones(17410) * -np.inf
+        expected_logits[4098:5122] = 1.0
+        state = mock.Mock(cur_index=[13])
+        new_logits = decode.constrained_logit_callback_fn(
+            in_logits, state, split_point=250, style_depth=12
+        )
+        np.testing.assert_equal(new_logits, expected_logits)
 
 
 if __name__ == "__main__":
-  absltest.main()
+    absltest.main()

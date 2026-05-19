@@ -23,67 +23,64 @@ from magenta_rt import musiccoca
 
 
 class MusicCoCaTest(absltest.TestCase):
+    def test_musiccoca_savedmodel(self):
+        style_model = musiccoca.MusicCoCa()
 
-  def test_musiccoca_savedmodel(self):
-    style_model = musiccoca.MusicCoCa()
+        # Single
+        embedding = style_model.embed("metal")
+        self.assertIsInstance(embedding, np.ndarray)
+        self.assertEqual(embedding.shape, (768,))
+        tokens = style_model.tokenize(embedding)
+        self.assertIsInstance(tokens, np.ndarray)
+        self.assertEqual(tokens.shape, (12,))
 
-    # Single
-    embedding = style_model.embed("metal")
-    self.assertIsInstance(embedding, np.ndarray)
-    self.assertEqual(embedding.shape, (768,))
-    tokens = style_model.tokenize(embedding)
-    self.assertIsInstance(tokens, np.ndarray)
-    self.assertEqual(tokens.shape, (12,))
+        # Batch
+        embeddings = style_model.embed(["metal", "rock"])
+        self.assertIsInstance(embeddings, np.ndarray)
+        self.assertEqual(embeddings.shape, (2, 768))
+        tokens = style_model.tokenize(embeddings)
+        self.assertIsInstance(tokens, np.ndarray)
+        self.assertEqual(tokens.shape, (2, 12))
 
-    # Batch
-    embeddings = style_model.embed(["metal", "rock"])
-    self.assertIsInstance(embeddings, np.ndarray)
-    self.assertEqual(embeddings.shape, (2, 768))
-    tokens = style_model.tokenize(embeddings)
-    self.assertIsInstance(tokens, np.ndarray)
-    self.assertEqual(tokens.shape, (2, 12))
+    def test_musiccoca_against_reference(self):
+        # Test text
+        with open(asset.fetch("testdata/musiccoca_mv212/inputs.txt")) as f:
+            input_text = f.read().strip().splitlines()
+        style_model = musiccoca.MusicCoCa()
+        embeddings = style_model.embed(input_text)
+        embeddings_ref = np.load(asset.fetch("testdata/musiccoca_mv212/embeddings.npy"))
+        error = np.abs(embeddings - embeddings_ref)
+        self.assertLess(np.max(error), 1e-5)
 
-  def test_musiccoca_against_reference(self):
-    # Test text
-    with open(asset.fetch("testdata/musiccoca_mv212/inputs.txt")) as f:
-      input_text = f.read().strip().splitlines()
-    style_model = musiccoca.MusicCoCa()
-    embeddings = style_model.embed(input_text)
-    embeddings_ref = np.load(
-        asset.fetch("testdata/musiccoca_mv212/embeddings.npy")
-    )
-    error = np.abs(embeddings - embeddings_ref)
-    self.assertLess(np.max(error), 1e-5)
+        # Test tokens
+        tokens = style_model.tokenize(embeddings_ref)
+        tokens_ref = np.load(asset.fetch("testdata/musiccoca_mv212/tokens.npy"))
+        np.testing.assert_array_equal(tokens, tokens_ref)
 
-    # Test tokens
-    tokens = style_model.tokenize(embeddings_ref)
-    tokens_ref = np.load(asset.fetch("testdata/musiccoca_mv212/tokens.npy"))
-    np.testing.assert_array_equal(tokens, tokens_ref)
+        # Test quantizer against SavedModel.
+        quantizer_sm = tf.saved_model.load(
+            asset.fetch("savedmodels/musiccoca_mv212_quant", is_dir=True)
+        )
+        tokens_sm = quantizer_sm(tf.constant(embeddings_ref)).cpu().numpy()
+        np.testing.assert_array_equal(tokens_sm[:, 0], tokens_ref)
 
-    # Test quantizer against SavedModel.
-    quantizer_sm = tf.saved_model.load(
-        asset.fetch("savedmodels/musiccoca_mv212_quant", is_dir=True)
-    )
-    tokens_sm = quantizer_sm(tf.constant(embeddings_ref)).cpu().numpy()
-    np.testing.assert_array_equal(tokens_sm[:, 0], tokens_ref)
+        # Test audio
+        samples = np.load(asset.fetch("testdata/musiccoca_mv212/audio.npy"))
+        waveforms = [audio.Waveform(s, 16000) for s in samples]
+        embeddings = style_model.embed(waveforms)
+        embeddings_ref = np.load(
+            asset.fetch("testdata/musiccoca_mv212/embeddings_audio.npy")
+        )
+        error = np.abs(embeddings - embeddings_ref)
+        self.assertLess(np.max(error), 1e-5)
 
-    # Test audio
-    samples = np.load(asset.fetch("testdata/musiccoca_mv212/audio.npy"))
-    waveforms = [audio.Waveform(s, 16000) for s in samples]
-    embeddings = style_model.embed(waveforms)
-    embeddings_ref = np.load(
-        asset.fetch("testdata/musiccoca_mv212/embeddings_audio.npy")
-    )
-    error = np.abs(embeddings - embeddings_ref)
-    self.assertLess(np.max(error), 1e-5)
-
-  def test_musiccoca_audio_embedding(self):
-    style_model = musiccoca.MusicCoCa()
-    waveform = audio.Waveform(np.random.randn(160000, 2), 16000)
-    embeddings = style_model([waveform, "static", waveform, "noise"])
-    self.assertIsInstance(embeddings, np.ndarray)
-    self.assertEqual(embeddings.shape, (4, 768))
+    def test_musiccoca_audio_embedding(self):
+        style_model = musiccoca.MusicCoCa()
+        waveform = audio.Waveform(np.random.randn(160000, 2), 16000)
+        embeddings = style_model([waveform, "static", waveform, "noise"])
+        self.assertIsInstance(embeddings, np.ndarray)
+        self.assertEqual(embeddings.shape, (4, 768))
 
 
 if __name__ == "__main__":
-  absltest.main()
+    absltest.main()
