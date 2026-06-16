@@ -412,9 +412,10 @@ class MusicCoCaV212F(MusicCoCaBase):
         batch_text: BatchText,
     ) -> BatchStyleEmbedding:
         # Load MusicCoCa encoder.
-        emb_text = lambda x, y: self._encoder.signatures["embed_text"](
-            inputs_0=x, inputs_0_1=y
-        )["contrastive_txt_embed"]
+        def emb_text(x, y):
+            return self._encoder.signatures["embed_text"](inputs_0=x, inputs_0_1=y)[
+                "contrastive_txt_embed"
+            ]
 
         # Embed text.
         embeddings = []
@@ -449,9 +450,10 @@ class MusicCoCaV212F(MusicCoCaBase):
         batch_clips: np.ndarray,
     ) -> BatchStyleEmbedding:
         # Load MusicCoCa encoder.
-        emb_audio = lambda x: self._encoder.signatures["embed_music"](inputs_0=x)[
-            "contrastive_music_embed"
-        ]
+        def emb_audio(x):
+            return self._encoder.signatures["embed_music"](inputs_0=x)[
+                "contrastive_music_embed"
+            ]
 
         # Embed audio.
         embeddings = []

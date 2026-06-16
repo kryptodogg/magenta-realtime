@@ -36,7 +36,12 @@ from . import modules as depthformer
 
 FINAL_KERNEL_INIT = nn.initializers.variance_scaling(1.0, "fan_in", "truncated_normal")
 BIAS_INIT = nn.initializers.normal(stddev=1e-6)
-make_dropout = lambda: nn.Dropout(rate=0.1, broadcast_dims=(-2,))
+
+
+def make_dropout():
+    return nn.Dropout(rate=0.1, broadcast_dims=(-2,))
+
+
 make_layer_norm = layer_norm.T5LayerNorm
 DTYPE = jnp.float32
 

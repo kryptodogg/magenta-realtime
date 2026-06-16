@@ -92,7 +92,9 @@ def decode_with_classifier_free_guidance(
         state: t5x.decoding.SamplingLoopState,
     ) -> t5x.decoding.SamplingLoopState:
         def _override_samples(state):
-            override = lambda x: jnp.repeat(x[::2], 2, axis=0)
+            def override(x):
+                return jnp.repeat(x[::2], 2, axis=0)
+
             return state.replace(
                 sequences=override(state.sequences),
                 cur_token=override(state.cur_token),

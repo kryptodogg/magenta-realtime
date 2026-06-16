@@ -66,7 +66,10 @@ def rvq_quantization(
         raise ValueError("residual and codebooks must have the same shape")
     (batch_size, embedding_dim) = embeddings.shape
     result = np.zeros((batch_size, codebooks.shape[0]), dtype=np.int32)
-    dist_fn = lambda a, b: np.linalg.norm(a - b, axis=-1)  # L2 distance
+
+    def dist_fn(a, b):
+        return np.linalg.norm(a - b, axis=-1)  # L2 distance
+
     residual = embeddings.copy()
     for i in range(codebooks.shape[0]):
         # Compute distances between residual and each code

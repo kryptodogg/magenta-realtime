@@ -206,9 +206,12 @@ class TemporalDecoderStack(nn.Module):
 
     def _setup_layer_sequence(self):
         """Follows setup_layer_sequence of the base Decoder class."""
-        lyrf = lambda: self.temporal_layer_factory(  # pylint: disable=g-long-lambda
-            shared_relative_position_bias=self.relpos_bias
-        )
+
+        def lyrf():
+            return self.temporal_layer_factory(  # pylint: disable=g-long-lambda
+                shared_relative_position_bias=self.relpos_bias
+            )
+
         self.layers = [lyrf() for _ in range(self.num_temporal_layers)]
         return common.TransparentLayerSequence(self.layers)
 
@@ -344,9 +347,11 @@ class DepthDecoderStack(nn.Module):
         if self.scan_layers:
             raise ValueError("Scan layers not supported.")
 
-        lyrf_depth = lambda: self.depth_layer_factory(  # pylint: disable=g-long-lambda
-            shared_relative_position_bias=self.relpos_bias_depth
-        )
+        def lyrf_depth():
+            return self.depth_layer_factory(  # pylint: disable=g-long-lambda
+                shared_relative_position_bias=self.relpos_bias_depth
+            )
+
         self.depth_layers = [lyrf_depth() for _ in range(self.num_depth_layers)]
         return common.TransparentLayerSequence(self.depth_layers)
 

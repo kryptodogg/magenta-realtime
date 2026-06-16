@@ -168,7 +168,9 @@ class AudioStreamer:
         )
 
         if start_streaming_callback is None:
-            start_streaming_callback = lambda: None
+
+            def start_streaming_callback():
+                return None
 
         colab.output.register_callback(
             "notebook.startStreamingCallback",
@@ -176,7 +178,9 @@ class AudioStreamer:
         )
 
         if stop_streaming_callback is None:
-            stop_streaming_callback = lambda: None
+
+            def stop_streaming_callback():
+                return None
 
         colab.output.register_callback(
             "notebook.stopStreamingCallback",
